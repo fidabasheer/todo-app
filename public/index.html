@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+        crossorigin="anonymous">
+  <title>Training</title>
+  <style>
+  .strike {
+
+    text-decoration:line-through
+  }
+
+  </style>
+</head>
+<body>
+<div class="container "  >
+        <div class="row" style="padding-top:10% ">
+
+            <div class="col-md-3"></div>
+               
+            <div class="col-md-6  shadow p-3  bg-white rounded"  >
+             <div class=" shadow p-3 bg-white rounded" style="padding-top:15%">
+               <div class=" shadow p-3 bg-white rounded" style="padding-top:15% ">
+                <div class="text-center">
+                 <span class="head" >todos</span><br>
+                 <button type="button" id="add" class="btn btn-outline-secondary btn-lg float-right">ADD</button></span><input type="text" class="form-control  form-control-lg" placeholder="what needs to be done?" id="text">
+
+
+
+  <div class="checkbox text-left" ></div>
+  <span  style="color:grey">items left:<span class='number'></span></span>
+  <button id="all" class="btn btn-light" style="color:grey">All</button>
+  <button id="active" class="btn btn-light" style="color:grey">Active</button>
+  <button id="completed" class="btn btn-light" style="color:grey">completed</button>
+  <button id="clear" class="btn btn-light" style="color:grey">clearcompleted</button>
+
+</div>
+</body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+  $(document).ready(function () {
+    console.log("I am ready to start");
+  var count=0;
+  //getall
+  
+    $.ajax({
+      url: 'http://localhost:6028/api/todo',
+      method: 'GET',
+    
+      error: function(xhr, errorText) {
+        console.log("I made an error");
+        console.log(xhr, errorText)
+      },
+      success: function(data) {
+        console.log("I got it...")
+        console.log(data);
+        var html = '<br>'
+          for(var i = 0; i < data.length; i++) {
+            html += `<div class="dd" style="border-bottom:thin solid #ccc" data-id="${data[i].todo_id} "  ><input type="checkbox" class="aa " style="width:30px;height:30px;"  ${data[i].status==1 ? `checked`:``}></input><span data-id="${data[i].todo_id}" style="font-size:25px;color:brown" class="${data[i].status==1 ? `strike`:`` } " >${data[i].title}</span></div><br>`     
+             if(data[i].status==0){
+               count++;
+             }          
+          }
+        $('.number').append(count)
+        $('.checkbox').append(html);
+      },
+      complete: function(xhr) {
+        console.log("Completed...");
+        console.log(xhr);
+        
+     
+      }
+    });
+
+//post
+
+    $('#add').on('click', function() { 
+      var name = $('input').val();
+      console.log("Going to add ", name);
+      $.ajax({
+        url: 'http://localhost:6028/api/todo',
+        method: 'POST',
+        data: {
+          title: name,
+          status:0
+        },
+        error: function(xhr, errorText) {
+          console.log("I made an error");
+          console.log(xhr, errorText)
+        },
+        success: function(data) {
+          console.log("I have added...")
+          console.log(data);
+ 
+          var html = `<div class="dd" style="border-bottom:thin solid #ccc" data-id="${data.todo_id}"><input type="checkbox" class="aa" " style="width:30px;height:30px;" ><span style="font-size:25px;color:brown" data-id="${data.todo_id}">${data.title}</span></div>`
+          
+          $('.checkbox').append(html);
+          count++;
+         $('.number').empty().append(count)
+        }
+      })
+    });
+
+
+//title updation
+    $('body').on('click','span', function(e) {   
+      var id = $(this).data('id');
+      $(this).prev('input').hide();
+      console.log("Details of ", id);
+       $( '.dd' ).find( "a:last" ).remove();
+   var $el = $(this);           
+  var $input = $('<input>').val( $el.text() );
+  $el.replaceWith( $input );
+  var save = function(){
+    var $p = $($el).text( $input.val() );
+    $(this).prev('input').show();
+    $input.replaceWith( $p );
+    var x=($p).text();
+        updateData({title: x}, id, function(err, data) {
+          if (err) {
+            console.log("I made an error");
+      
+          }
+          else{ 
+            console.log("title updated...")
+                    console.log(data);         
+          }
+  
+  });
+  }
+  $input.one('blur', save).focus();
+    
+
+    });
+
+    //status updation
+
+    $('body').on('click','.aa',function () {
+       var id = $(this).next('span').data('id');
+      console.log("Details of ", id);
+            if (this.checked) {
+               $('.number').empty().append(--count);
+
+                $(this).next("span").addClass("strike");
+                  updateData({status: 1}, id, function(err, data) {
+          if (err) {
+            console.log("I made an error");
+      
+          }
+          else{ 
+            console.log("title updated...")
+                    console.log(data);         
+          }
+  
+  });
+            
+            }
+           else if($(this).not(':checked')) {
+              $('.number').empty().append(++count);
+
+               $(this).next("span").removeClass("strike");
+                updateData({status: 0}, id, function(err, data) {
+          if (err) {
+            console.log("I made an error");
+      
+          }
+          else{ 
+            console.log("title updated...")
+                    console.log(data);         
+          }
+  
+  });
+               
+            }
+        
+        });
+
+
+//get all on click
+
+         $('#all').on('click', function() {
+        getData("all", function(err, data) {
+          if (err) {
+            console.log("I made an error");
+      
+          }
+          else{ 
+            console.log("i got it...")
+                    console.log(data);         
+          }
+  
+  });
+         });
+
+//get active and completed
+
+function getData(stat,cb) {
+ $.ajax({
+      url: 'http://localhost:6028/api/todo',
+      method: 'GET',
+    
+      error: function(xhr, errorText) {
+        console.log("I made an error");
+        console.log(xhr, errorText)
+      },
+      success: function(data) {
+        console.log("I got it...")
+        console.log(data);
+        var html = '<br>'
+          for(var i = 0; i < data.length; i++) {
+            if(stat=="all"){
+
+
+            html += `<div class="dd" style="border-bottom:thin solid #ccc" data-id="${data[i].todo_id} "  ><input type="checkbox" class="aa " style="width:30px;height:30px;"  ${data[i].status==1 ? `checked`:``}></input><span data-id="${data[i].todo_id}" style="font-size:25px;color:brown" class="${data[i].status==1 ? `strike`:`` } " >${data[i].title}</span></div><br>`
+
+            }
+
+            if(data[i].status==stat){
+
+            html += `<div class="dd" style="border-bottom:thin solid #ccc" data-id="${data[i].todo_id} "  ><input type="checkbox" class="aa " style="width:30px;height:30px;"  ${data[i].status==1 ? `checked`:``}></input><span data-id="${data[i].todo_id}" style="font-size:25px;color:brown" class="${data[i].status==1 ? `strike`:`` } " >${data[i].title}</span></div><br>`
+            }
+          }
+  
+     $('.checkbox').empty().append(html);
+      },
+      complete: function(xhr) {
+        console.log("Completed...");
+        console.log(xhr);
+      }
+    });
+
+}
+
+
+//get active
+
+
+         $('#active').on('click', function() {
+        getData(0, function(err, data) {
+          if (err) {
+            console.log("I made an error");
+      
+          }
+          else{ 
+            console.log("title updated...")
+                    console.log(data);         
+          }
+  
+  });
+         });
+
+   //completed
+            $('#completed').on('click', function() {
+                      getData(1, function(err, data) {
+          if (err) {
+            console.log("I made an error");
+      
+          }
+          else{ 
+            console.log("i got it")
+                    console.log(data);         
+          }
+  
+  });
+ 
+         });
+//hover
+ $('body').on('mouseenter', ".dd", function(){
+    $( this ).append( $( "<a href='#' class='close'></a>" ) )
+
+ }
+ );   
+  $('body').on('mouseleave', ".dd", function(){
+    $( this ).find( "a:last" ).remove();
+     }
+    
+ );
+
+//delete
+ $('body').on('click', ".close", function(e){
+   e.preventDefault();
+ var id = $(this).parent('.dd').data('id');
+if(!($(this).siblings('input').is(':checked')))
+  $('.number').empty().append(--count);
+
+      console.log("Details of ", id);
+      $(this).parent('.dd').remove();
+
+     
+   $.ajax({
+                     url: 'http://localhost:6028/api/todo/'+id,
+                     method: 'DELETE',
+                     
+                     error: function(xhr, errorText) {
+                      console.log("I made an error");
+                      console.log(xhr, errorText)
+                    },
+                     success: function(data) {
+                    console.log("title deleted...")
+                    console.log(data);
+
+
+            } 
+  });
+
+
+})
+// onclick clear completed 
+
+
+ $('#clear').on('click', function() {
+console.log('hi')
+
+     
+     $.ajax({
+        url: 'http://localhost:6028/api/todo/c',
+       method: 'DELETE',
+      
+       error: function (xhr, errorText) {
+         console.log("I made an error");
+         console.log(xhr, errorText)
+       },
+       success: function (data) {
+         console.log("deleted")
+         console.log(data);
+       },
+       complete: function (xhr) {
+         console.log("Completed...");
+         console.log(xhr);
+       }
+     });
+     getData("all", function(err, data) {
+         if (err) {
+           console.log("I made an error");
+       console.log(xhr, errorText)
+         }
+       })
+   });
+
+ 
+
+
+
+//put function
+
+ function updateData(data,id,cb) {
+    $.ajax({
+
+      url: 'http://localhost:6028/api/todo/'+id,
+      method: 'PUT',
+      data: data,
+      error: function (xhr, errorText) {     
+      cb(errorText,null);
+      },
+      success: function (data) {
+      
+        cb(null, data)
+      }
+    });
+  }  
+});
+
+</script>
+</html>
+<style>
+.head{
+text-align:center;
+color:#D2B48C;
+ font-size: 80px;
+ font-style: oblique;
+} 
+ .close {
+  position: absolute;
+  right: 100px;
+ 
+  opacity: 0.3;
+} 
+.close:hover {
+  opacity: 1;
+}
+.close:before, .close:after {
+  position: absolute;
+  left: 15px;
+  content: ' ';
+  height: 33px;
+  width: 2px;
+  background-color: red;
+}
+.close:before {
+  transform: rotate(45deg);
+}
+.close:after {
+  transform: rotate(-45deg);
+}
+#text{
+  width:78% !important
+}
+::placeholder{
+  font-size:18px;
+  font-style: italic;
+}
+
+</style>
